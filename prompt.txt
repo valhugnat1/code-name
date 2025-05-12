@@ -1,0 +1,7 @@
+Make a matrix of blue circle, red diamond, black X and white void on this 5x5 matrix Output in a JSON format.
+Give me the 1 color outside the matrix on the same on the 4 sides, which is Red or Blue.
+
+
+---
+
+
