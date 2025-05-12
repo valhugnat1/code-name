@@ -1,0 +1,121 @@
+{
+  "board_size": 5,
+  "color_matrix": [
+    [
+      "neutral",
+      "red",
+      "red",
+      "red",
+      "blue"
+    ],
+    [
+      "blue",
+      "blue",
+      "red",
+      "neutral",
+      "red"
+    ],
+    [
+      "blue",
+      "neutral",
+      "red",
+      "red",
+      "blue"
+    ],
+    [
+      "neutral",
+      "neutral",
+      "blue",
+      "assassin",
+      "blue"
+    ],
+    [
+      "neutral",
+      "blue",
+      "red",
+      "red",
+      "neutral"
+    ]
+  ],
+  "word_matrix": [
+    [
+      "SOURIS",
+      "FUS\u00c9E",
+      "PLAGE",
+      "VAMPIRE",
+      "ROBOT"
+    ],
+    [
+      "FEU",
+      "NEIGE",
+      "PIRATE",
+      "BANANE",
+      "DRAGON"
+    ],
+    [
+      "CHEVAL",
+      "LUNE",
+      "MIROIR",
+      "MAGIE",
+      "CHOCOLAT"
+    ],
+    [
+      "TOUR",
+      "T\u00c9L\u00c9PHONE",
+      "BANQUIER",
+      "TRAIN",
+      "FOR\u00caT"
+    ],
+    [
+      "COEUR",
+      "BIBLIOTH\u00c8QUE",
+      "SOLDAT",
+      "AVION",
+      "NUAGE"
+    ]
+  ],
+  "revealed_matrix": [
+    [
+      false,
+      true,
+      false,
+      false,
+      false
+    ],
+    [
+      true,
+      true,
+      false,
+      false,
+      true
+    ],
+    [
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    [
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    [
+      false,
+      true,
+      false,
+      true,
+      false
+    ]
+  ],
+  "red_score": 3,
+  "blue_score": 3,
+  "current_player": "blue",
+  "red_cards_total": 9,
+  "blue_cards_total": 8,
+  "game_over": false,
+  "winner": null
+}
