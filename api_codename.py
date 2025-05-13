@@ -1,11 +1,17 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Dict, Optional
 import uvicorn
-import uuid
+import json
+import os
 from enum import Enum
+from game_saving import Game
 
 app = FastAPI(title="Word Game API")
+
+# Ensure games directory exists
+GAMES_DIR = "games"
+os.makedirs(GAMES_DIR, exist_ok=True)
 
 # Models
 class CardColor(str, Enum):
@@ -19,19 +25,8 @@ class Card(BaseModel):
     color: CardColor
     revealed: bool = False
 
-class Game(BaseModel):
-    id: str
-    cards: List[Card]
-    current_turn: str  # "red" or "blue"
-    current_clue: Optional[str] = None
-    current_clue_number: Optional[int] = None
-    red_cards_left: int
-    blue_cards_left: int
-    winner: Optional[str] = None
-
 class CreateGameRequest(BaseModel):
     cards: List[Dict]
-    game_id: Optional[str] = None
 
 class CreateGameResponse(BaseModel):
     game_id: str
@@ -44,9 +39,6 @@ class ClueRequest(BaseModel):
 class ClueResponse(BaseModel):
     clue: str
     number: int
-
-class GameStateRequest(BaseModel):
-    game_id: str
 
 class GameStateResponse(BaseModel):
     current_turn: str
@@ -62,79 +54,73 @@ class GuessRequest(BaseModel):
     word: str
 
 class GuessResponse(BaseModel):
-    correct: bool
+    guess_status: str
     card_color: CardColor
-    board: List[Card]
     game_over: bool
     winner: Optional[str]
+    userMassage: str
 
-# In-memory storage for games
-games = {}
+# File operations for game storage
+def save_game(game):
+    """Save game to a JSON file"""
+    filename_save = os.path.join(GAMES_DIR, f"{game.id}.json")
+    
+    with open(filename_save, 'w', encoding='utf-8') as f:
+        f.write(game.to_json_string())
+
+
+def load_game(game_id: str):
+    """Load game from a JSON file"""
+    file_path = os.path.join(GAMES_DIR, f"{game_id}.json")
+    
+    if not os.path.exists(file_path):
+        return None
+    filename = "save_game_test.json"
+    try:
+        with open(filename, 'r', encoding='utf-8') as f:
+            json_data = f.read()
+        game = Game.from_json_string(json_data)
+        print(f"Partie chargée depuis '{filename}'.")
+    except FileNotFoundError:
+        print(f"Erreur : Fichier '{filename}' non trouvé.")
+    except json.JSONDecodeError:
+        print(f"Erreur : Le fichier '{filename}' ne contient pas de JSON valide.")
+    except Exception as e:
+        print(f"Erreur inattendue lors du chargement de la partie : {e}")
+        # Optionnellement, demander à nouveau ou commencer une nouvelle partie
+    return game
 
 # Routes
 @app.post("/game", response_model=CreateGameResponse)
 async def create_game(request: CreateGameRequest):
     """Create a new game with the given cards and ID."""
-    # This is a placeholder - in a real implementation, you would:
-    # - Validate the cards
-    # - Assign colors if not provided
-    # - Determine the first player
-    
-    game_id = request.game_id or str(uuid.uuid4())
-    
-    if game_id in games:
+    game = Game()
+    # Check if game already exists
+    if os.path.exists(os.path.join(GAMES_DIR, f"{game.id}.json")):
         raise HTTPException(status_code=400, detail="Game ID already exists")
-    
-    # Convert dict to Card objects
-    cards = [Card(**card) for card in request.cards]
-    
-    # Count cards by color for tracking
-    red_count = sum(1 for card in cards if card.color == CardColor.RED)
-    blue_count = sum(1 for card in cards if card.color == CardColor.BLUE)
-    
-    # Determine first player (placeholder logic)
-    first_player = "red" if red_count > blue_count else "blue"
-    
-    # Create and store the game
-    games[game_id] = Game(
-        id=game_id,
-        cards=cards,
-        current_turn=first_player,
-        red_cards_left=red_count,
-        blue_cards_left=blue_count,
-    )
-    
-    return CreateGameResponse(game_id=game_id, first_player=first_player)
 
-@app.post("/clue", response_model=ClueResponse)
-async def get_ai_clue(request: ClueRequest):
-    """Get an AI-generated clue for the given team."""
-    if request.game_id not in games:
-        raise HTTPException(status_code=404, detail="Game not found")
+    game.turn_display_counter = 1 
+    game.get_clue()
+    game.guesses_correct_this_round = 0
+
+    # Save game to file
+    save_game(game)
     
-    game = games[request.game_id]
-    
-    # Placeholder for AI clue generation logic
-    def generate_clue(game: Game, team_color: str) -> tuple:
-        # In a real implementation, this would use an AI model to generate a relevant clue
-        # based on the remaining cards of the team's color
-        return "placeholder_clue", 2
-    
-    clue_word, clue_number = generate_clue(game, request.team_color)
-    
-    # Update game state
-    game.current_clue = clue_word
-    game.current_clue_number = clue_number
-    
-    return ClueResponse(clue=clue_word, number=clue_number)
+    return CreateGameResponse(game_id=game.id, first_player=game.current_player)
 
 @app.get("/game/{game_id}", response_model=GameStateResponse)
 async def get_game_state(game_id: str):
     """Get the current state of the game."""
-    if game_id not in games:
+    game = load_game(game_id)
+    if not game:
         raise HTTPException(status_code=404, detail="Game not found")
-    
-    game = games[game_id]
+
+    keyword = game.keyword
+    max_guesses_this_round = game.number_gess_given + 1 if game.number_gess_given > 0 else 1
+    attempt_num = game.guesses_correct_this_round + 1
+
+
+    print(f"\nDevinette {attempt_num}/{max_guesses_this_round} pour l'indice '{keyword}, {game.number_gess_given}'.")
     
     return GameStateResponse(
         current_turn=game.current_turn,
@@ -149,57 +135,80 @@ async def get_game_state(game_id: str):
 @app.post("/guess", response_model=GuessResponse)
 async def make_guess(request: GuessRequest):
     """Submit a guess for a word."""
-    if request.game_id not in games:
+    game = load_game(request.game_id)
+    if not game:
         raise HTTPException(status_code=404, detail="Game not found")
     
-    game = games[request.game_id]
-    
-    # Find the card with the guessed word
-    found_card = None
-    for card in game.cards:
-        if card.word.lower() == request.word.lower():
-            found_card = card
-            break
-    
-    if not found_card:
-        raise HTTPException(status_code=400, detail="Word not found on the board")
-    
-    if found_card.revealed:
-        raise HTTPException(status_code=400, detail="Card already revealed")
-    
-    # Reveal the card
-    found_card.revealed = True
-    
-    # Update game state based on the guess
-    game_over = False
-    correct_guess = found_card.color == CardColor(game.current_turn)
-    
-    # Update cards left count
-    if found_card.color == CardColor.RED:
-        game.red_cards_left -= 1
-        if game.red_cards_left == 0:
-            game.winner = "red"
-            game_over = True
-    elif found_card.color == CardColor.BLUE:
-        game.blue_cards_left -= 1
-        if game.blue_cards_left == 0:
-            game.winner = "blue"
-            game_over = True
-    elif found_card.color == CardColor.ASSASSIN:
-        game.winner = "blue" if game.current_turn == "red" else "red"
-        game_over = True
-    
-    # Switch turns if guess was incorrect or if it was the assassin
-    if not correct_guess or found_card.color == CardColor.ASSASSIN:
-        game.current_turn = "blue" if game.current_turn == "red" else "red"
-    
-    return GuessResponse(
-        correct=correct_guess,
-        card_color=found_card.color,
-        board=game.cards,
-        game_over=game_over,
-        winner=game.winner
+    response = GuessResponse(
+        guess_status="",
+        game_over=False,
+        userMassage=""
     )
+
+    max_guesses_this_round = game.number_gess_given + 1 if game.number_gess_given > 0 else 1
+    attempt_num = game.guesses_correct_this_round + 1
+
+    
+    # Si toutes les cibles de l'indice ont été trouvées et qu'il reste des tentatives (le +1)
+    if game.number_gess_given > 0 and game.guesses_correct_this_round == game.number_gess_given and attempt_num > game.number_gess_given:
+            print("Vous avez trouvé tous les mots de l'indice. Ceci est une devinette bonus.")
+    elif game.number_gess_given == 0 and attempt_num ==1:
+            print("Indice '0'. Vous pouvez tenter une devinette ou passer.")
+    
+    save_game(game)
+
+    guess_word_input = request.guess_word.strip().upper()
+
+    if guess_word_input == 'PASSE':
+        print("L'équipe passe son tour.")
+        game.end_round()
+        response.userMassage += "L'équipe passe son tour.\n"
+        
+
+    guess_status, messageUser = game.process_guess(guess_word_input)
+    response.userMassage += messageUser + "\n"
+
+    if guess_status == 'INVALID_WORD':
+        print(f"Le mot '{guess_word_input}' n'est pas sur le plateau. Réessayez cette tentative.")
+        raise HTTPException(status_code=500, detail="Invalid word")
+
+
+    elif guess_status == 'ALREADY_REVEALED':
+        print(f"Le mot '{guess_word_input}' a déjà été révélé.")
+        raise HTTPException(status_code=500, detail="Already revealed")
+    elif guess_status == 'CORRECT_WIN' or guess_status == 'ASSASSIN_LOSS':
+        # Message de victoire déjà affiché par process_guess
+        game.display_board(show_colors=True)
+        game.end_round()
+    elif guess_status == 'NEUTRAL' or guess_status == 'OPPONENT':
+        response.userMassage += "Fin du tour pour cette équipe.\n"
+        print("Fin du tour pour cette équipe.")
+        if game.game_over: # L'adversaire a pu gagner
+            print(f"L'équipe {game.winner.upper()} a gagné !")
+            response.userMassage += f"L'équipe {game.winner.upper()} a gagné !\n"
+            response.game_over = True
+            response.winner = game.winner.upper()
+            game.display_board(show_colors=True)
+        game.end_round()
+    elif guess_status == 'CORRECT_CONTINUE':
+        game.guesses_correct_this_round += 1
+        if game.number_gess_given > 0 and game.guesses_correct_this_round == game.number_gess_given:
+            response.userMassage += f"Vous avez trouvé les {game.number_gess_given} mots cibles de l'indice !\n"
+            print(f"Vous avez trouvé les {game.number_gess_given} mots cibles de l'indice !")
+
+            if attempt_num < max_guesses_this_round:
+                response.userMassage += "Vous avez encore une devinette bonus si vous le souhaitez.\n"
+                print("Vous avez encore une devinette bonus si vous le souhaitez.")
+            # Si attempt_num == max_guesses_this_round, la boucle se terminera naturellement.
+        elif game.number_gess_given == 0 and guess_status == 'CORRECT_CONTINUE': # Trouvé un mot correct sur un indice 0
+            response.userMassage += "Fin du tour pour cette équipe (indice 0 et mot correct trouvé).\n"
+            print("Fin du tour pour cette équipe (indice 0 et mot correct trouvé).")
+            game.end_round()
+    
+    # Save updated game
+    save_game(game)
+    
+    return response
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

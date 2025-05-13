@@ -1,5 +1,6 @@
 import random
-import json # Ajout de l'import pour la sérialisation JSON
+import json
+import uuid # Ajout de l'import pour la sérialisation JSON
 
 # Pour utiliser l'API OpenAI, vous devez l'installer : pip install openai
 # et configurer votre clé API (par exemple via une variable d'environnement OPENAI_API_KEY)
@@ -29,6 +30,8 @@ class Game:
     def _initialize_new_game_state(self):
         """Initialise l'état pour une nouvelle partie."""
         print("Initialisation d'une nouvelle partie...")
+        self.id = str(uuid.uuid4()) 
+        
         # Initialisation des matrices vides
         self.color_matrix = [[None for _ in range(self.BOARD_SIZE)] for _ in range(self.BOARD_SIZE)]
         self.word_matrix = [[None for _ in range(self.BOARD_SIZE)] for _ in range(self.BOARD_SIZE)]
@@ -77,6 +80,7 @@ class Game:
                 f"Attendu : {self.BOARD_SIZE}"
             )
 
+        self.id = data['id']
         self.color_matrix = data['color_matrix']
         self.word_matrix = data['word_matrix']
         self.revealed_matrix = data['revealed_matrix']
@@ -104,6 +108,7 @@ class Game:
     def to_json_string(self):
         """Sérialise l'état actuel du jeu en une chaîne JSON."""
         state = {
+            'id': self.id,
             'board_size': self.BOARD_SIZE,
             'color_matrix': self.color_matrix,
             'word_matrix': self.word_matrix,
@@ -252,20 +257,22 @@ class Game:
             'INVALID_WORD': Le mot n'est pas sur le plateau.
             'ALREADY_REVEALED': Le mot a déjà été révélé.
         """
+        messageUser = ""
         coords = self._find_word_coords(guessed_word)
 
         if coords is None:
-            return 'INVALID_WORD'
+            return 'INVALID_WORD', messageUser
 
         r, c = coords
         if self.revealed_matrix[r][c]:
-            return 'ALREADY_REVEALED'
+            return 'ALREADY_REVEALED', messageUser
 
         # Révéler la carte
         self.revealed_matrix[r][c] = True
         revealed_color = self.color_matrix[r][c]
         original_word = self.word_matrix[r][c]
         print(f" -> '{original_word}' est de couleur : {revealed_color.upper()}")
+        messageUser = f" -> '{original_word}' est de couleur : {revealed_color.upper()}"
 
         if revealed_color == self.current_player:
             if self.current_player == 'red':
@@ -274,19 +281,19 @@ class Game:
                 self.blue_score += 1
             print(f"Correct ! Score : ROUGE {self.red_score}/{self.red_cards_total} - BLEU {self.blue_score}/{self.blue_cards_total}")
             if self._check_win_condition(): # Vérifie si cette pioche fait gagner
-                return 'CORRECT_WIN'
-            return 'CORRECT_CONTINUE'
+                return 'CORRECT_WIN', messageUser
+            return 'CORRECT_CONTINUE', messageUser
 
         elif revealed_color == 'neutral':
             print("C'est une carte neutre.")
-            return 'NEUTRAL'
+            return 'NEUTRAL', messageUser
 
         elif revealed_color == 'assassin':
             print("Oh non ! C'est l'assassin !")
             self.game_over = True
             self.winner = 'red' if self.current_player == 'blue' else 'blue' # L'autre équipe gagne
             print(f"L'équipe {self.winner.upper()} gagne !")
-            return 'ASSASSIN_LOSS'
+            return 'ASSASSIN_LOSS', messageUser
 
         else: # C'est une carte de l'adversaire
             opponent_actual_color = revealed_color # 'red' ou 'blue'
@@ -298,7 +305,7 @@ class Game:
             if self._check_win_condition(): # Vérifie si l'adversaire gagne grâce à cette pioche
                 # self.game_over et self.winner sont mis à jour par _check_win_condition
                 pass # La condition de victoire est gérée, le statut 'OPPONENT' indique fin de tour
-            return 'OPPONENT'
+            return 'OPPONENT', messageUser
 
     def _check_win_condition(self):
         """Vérifie si une condition de victoire est atteinte et met à jour game_over/winner."""
@@ -411,7 +418,7 @@ if __name__ == "__main__":
                 game.end_round()
                 break # Fin du tour de devinette pour cette équipe
 
-            guess_status = game.process_guess(guess_word_input)
+            guess_status, _ = game.process_guess(guess_word_input)
 
             if guess_status == 'INVALID_WORD':
                 print(f"Le mot '{guess_word_input}' n'est pas sur le plateau. Réessayez cette tentative.")
