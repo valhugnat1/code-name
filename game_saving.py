@@ -187,12 +187,10 @@ class Game:
         """
         Obtient un indice (mot-clé et nombre) pour le joueur actuel (espion).
         """
-        print(f"\n--- Tour de l'espion {self.current_player.upper()} ---")
+
         target_words = self._get_remaining_words(self.current_player)
         all_unrevealed_words = self._get_all_unrevealed_words()
 
-        print(f"Mots '{self.current_player.upper()}' à faire deviner : {', '.join(target_words) if target_words else 'Aucun'}")
-        # print(f"Tous les mots non révélés : {', '.join(all_unrevealed_words)}") # Peut être verbeux
 
         try:
             client = OpenAI()
@@ -338,7 +336,7 @@ class Game:
                     display_text = f"{word} ({color.upper()})"
                 elif show_colors: # Mode triche/debug
                     color = self.color_matrix[r][c]
-                    display_text = f"{word} [{color[:3].upper()}]"
+                    display_text = f"{word} [{color[:4].upper()}]"
                 else:
                     display_text = word
                 row_str.append(f"{display_text:<{col_width}}")
@@ -377,32 +375,20 @@ if __name__ == "__main__":
         else:
             print("Choix invalide. Veuillez entrer 'N' ou 'C'.")
 
-
     while not game.game_over:
         print(f"\n\n===== TOUR {game.turn_display_counter} =====")
         print(f"=== C'est à l'équipe {game.current_player.upper()} de jouer ===")
         if loadingTurn:
-            game.display_board()
             keyword = game.keyword
             num_solutions_clue = game.number_gess_given
-            print(f"\nL'équipe {game.current_player.upper()} a reçu l'indice : '{keyword}' pour {num_solutions_clue} mot(s).")
-            max_guesses_this_round = num_solutions_clue + 1 if num_solutions_clue > 0 else 1
             loadingTurn = False
         else : 
-            game.display_board()
-
-            # 1. L'espion donne un indice
-            # Si get_clue retourne 0 pour le nombre, l'équipe peut quand même faire une tentative "à l'aveugle" ou passer.
             keyword, num_solutions_clue = game.get_clue()
-            print(f"\nL'équipe {game.current_player.upper()} a reçu l'indice : '{keyword}' pour {num_solutions_clue} mot(s).")
-
-            # 2. Phase de devinette
-            # L'équipe peut faire jusqu'à num_solutions_clue + 1 devinettes.
-            # Si num_solutions_clue est 0, ils ont droit à 1 devinette (ou passer).
-            max_guesses_this_round = num_solutions_clue + 1 if num_solutions_clue > 0 else 1
             game.guesses_correct_this_round = 0
-
-        print ("game.guesses_correct_this_round ", game.guesses_correct_this_round)
+       
+        game.display_board()
+        print(f"\nL'équipe {game.current_player.upper()} a reçu l'indice : '{keyword}' pour {num_solutions_clue} mot(s).") 
+        max_guesses_this_round = num_solutions_clue + 1 if num_solutions_clue > 0 else 1
 
         for attempt_num in range(game.guesses_correct_this_round+1, max_guesses_this_round + 1):
             print(f"\nDevinette {attempt_num}/{max_guesses_this_round} pour l'indice '{keyword}, {num_solutions_clue}'.")
