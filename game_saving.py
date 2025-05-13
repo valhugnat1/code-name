@@ -41,6 +41,7 @@ class Game:
         self.keyword = ""
         self.number_gess_given = 0
         self.guesses_correct_this_round = 0
+        self.turn_display_counter = 0
 
 
         # Détermination du joueur qui commence et du nombre total de cartes par couleur
@@ -89,6 +90,7 @@ class Game:
         self.keyword = data['keyword']
         self.number_gess_given = data['number_gess_given']
         self.guesses_correct_this_round = data['guesses_correct_this_round']
+        self.turn_display_counter = data['turn_display_counter']
 
         # self.turn_count = data.get('turn_count', 1) # Charger le numéro du tour
         print("État du jeu chargé.")
@@ -115,7 +117,8 @@ class Game:
             'winner': self.winner,
             'keyword': self.keyword,
             'number_gess_given': self.number_gess_given,
-            'guesses_correct_this_round': self.guesses_correct_this_round
+            'guesses_correct_this_round': self.guesses_correct_this_round,
+            'turn_display_counter': self.turn_display_counter
 
             # 'turn_count': self.turn_count, # Si vous suivez le numéro du tour dans self
         }
@@ -315,7 +318,6 @@ class Game:
         """Change le joueur actuel."""
         self.current_player = 'blue' if self.current_player == 'red' else 'red'
 
-
     def end_round(self):
         """Change le joueur actuel."""
         game._switch_player()
@@ -360,7 +362,6 @@ if __name__ == "__main__":
                     json_data = f.read()
                 game = Game.from_json_string(json_data)
                 print(f"Partie chargée depuis '{filename}'.")
-                turn_display_counter = 1  # Réinitialiser le compteur de tours 
                 loadingTurn = True
             except FileNotFoundError:
                 print(f"Erreur : Fichier '{filename}' non trouvé.")
@@ -371,14 +372,14 @@ if __name__ == "__main__":
                 # Optionnellement, demander à nouveau ou commencer une nouvelle partie
         elif choice == 'N':
             game = Game()
-            turn_display_counter = 1 
+            game.turn_display_counter = 1 
             loadingTurn = False
         else:
             print("Choix invalide. Veuillez entrer 'N' ou 'C'.")
 
 
     while not game.game_over:
-        print(f"\n\n===== TOUR {turn_display_counter} =====")
+        print(f"\n\n===== TOUR {game.turn_display_counter} =====")
         print(f"=== C'est à l'équipe {game.current_player.upper()} de jouer ===")
         if loadingTurn:
             game.display_board()
@@ -476,13 +477,11 @@ if __name__ == "__main__":
             filename_save = "save_game_test.json"
             with open(filename_save, 'w', encoding='utf-8') as f:
                 f.write(game.to_json_string())
-            
-
 
         if game.game_over:
             break # Sortir de la boucle principale du jeu
 
-        turn_display_counter += 1
+        game.turn_display_counter += 1
     # Fin de la boucle principale du jeu (while not game.game_over)
 
     print("\n\n===== FIN DE LA PARTIE =====")

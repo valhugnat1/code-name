@@ -2,84 +2,91 @@
   "board_size": 5,
   "color_matrix": [
     [
+      "blue",
       "red",
-      "assassin",
-      "neutral",
-      "blue",
-      "neutral"
-    ],
-    [
-      "neutral",
-      "blue",
-      "neutral",
       "red",
-      "blue"
-    ],
-    [
-      "neutral",
       "blue",
-      "neutral",
-      "blue",
-      "blue"
+      "red"
     ],
     [
       "red",
-      "red",
-      "red",
+      "blue",
+      "blue",
       "red",
       "red"
     ],
     [
       "blue",
+      "blue",
+      "blue",
+      "assassin",
+      "neutral"
+    ],
+    [
+      "blue",
+      "neutral",
+      "blue",
       "red",
+      "neutral"
+    ],
+    [
+      "neutral",
+      "neutral",
       "neutral",
       "red",
-      "blue"
+      "neutral"
     ]
   ],
   "word_matrix": [
     [
-      "LUNE",
-      "SOURIS",
-      "COEUR",
       "SOLDAT",
-      "BANANE"
-    ],
-    [
-      "ROBOT",
-      "PLAGE",
-      "T\u00c9L\u00c9PHONE",
-      "TRAIN",
-      "VAMPIRE"
-    ],
-    [
-      "CHEVAL",
-      "DRAGON",
-      "AVION",
-      "PIRATE",
-      "NEIGE"
-    ],
-    [
+      "FEU",
+      "BANANE",
       "MIROIR",
-      "CHOCOLAT",
-      "FUS\u00c9E",
-      "NUAGE",
-      "BIBLIOTH\u00c8QUE"
+      "TRAIN"
     ],
     [
       "MAGIE",
-      "FEU",
-      "TOUR",
+      "VAMPIRE",
+      "NUAGE",
+      "BIBLIOTH\u00c8QUE",
+      "LUNE"
+    ],
+    [
+      "AVION",
+      "DRAGON",
       "BANQUIER",
-      "FOR\u00caT"
+      "CHOCOLAT",
+      "TOUR"
+    ],
+    [
+      "NEIGE",
+      "CHEVAL",
+      "FOR\u00caT",
+      "T\u00c9L\u00c9PHONE",
+      "PLAGE"
+    ],
+    [
+      "ROBOT",
+      "PIRATE",
+      "SOURIS",
+      "COEUR",
+      "FUS\u00c9E"
     ]
   ],
   "revealed_matrix": [
     [
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    [
+      false,
       true,
       false,
       false,
-      false,
       false
     ],
     [
@@ -98,27 +105,20 @@
     ],
     [
       false,
-      false,
-      true,
-      false,
-      false
-    ],
-    [
-      true,
       false,
       false,
       false,
       false
     ]
   ],
-  "red_score": 2,
+  "red_score": 0,
   "blue_score": 1,
-  "current_player": "red",
-  "red_cards_total": 9,
-  "blue_cards_total": 8,
+  "current_player": "blue",
+  "red_cards_total": 8,
+  "blue_cards_total": 9,
   "game_over": false,
   "winner": null,
-  "keyword": "LIVRE",
+  "keyword": "FANTASTIQUE",
   "number_gess_given": 3,
-  "guesses_correct_this_round": 0
+  "guesses_correct_this_round": 1
 }
