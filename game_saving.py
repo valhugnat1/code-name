@@ -38,6 +38,10 @@ class Game:
         self.red_score = 0
         self.blue_score = 0
 
+        self.keyword = ""
+        self.number_gess_given = 0
+        self.guesses_correct_this_round = 0
+
 
         # Détermination du joueur qui commence et du nombre total de cartes par couleur
         if random.choice([True, False]):
@@ -77,11 +81,15 @@ class Game:
         self.revealed_matrix = data['revealed_matrix']
         self.red_score = data['red_score']
         self.blue_score = data['blue_score']
-        self.current_player = 'red' if data['current_player'] == 'blue' else 'blue'
+        self.current_player = data['current_player']
         self.red_cards_total = data['red_cards_total']
         self.blue_cards_total = data['blue_cards_total']
         self.game_over = data['game_over']
         self.winner = data['winner']
+        self.keyword = data['keyword']
+        self.number_gess_given = data['number_gess_given']
+        self.guesses_correct_this_round = data['guesses_correct_this_round']
+
         # self.turn_count = data.get('turn_count', 1) # Charger le numéro du tour
         print("État du jeu chargé.")
 
@@ -105,6 +113,10 @@ class Game:
             'blue_cards_total': self.blue_cards_total,
             'game_over': self.game_over,
             'winner': self.winner,
+            'keyword': self.keyword,
+            'number_gess_given': self.number_gess_given,
+            'guesses_correct_this_round': self.guesses_correct_this_round
+
             # 'turn_count': self.turn_count, # Si vous suivez le numéro du tour dans self
         }
         return json.dumps(state, indent=2) # indent=2 pour une sortie JSON lisible
@@ -171,7 +183,6 @@ class Game:
     def get_clue(self):
         """
         Obtient un indice (mot-clé et nombre) pour le joueur actuel (espion).
-        !!! MODIFIEZ CETTE FONCTION POUR UTILISER L'API OPENAI !!!
         """
         print(f"\n--- Tour de l'espion {self.current_player.upper()} ---")
         target_words = self._get_remaining_words(self.current_player)
@@ -180,7 +191,6 @@ class Game:
         print(f"Mots '{self.current_player.upper()}' à faire deviner : {', '.join(target_words) if target_words else 'Aucun'}")
         # print(f"Tous les mots non révélés : {', '.join(all_unrevealed_words)}") # Peut être verbeux
 
-        # --- DÉBUT DE LA SECTION POUR L'APPEL LLM OPENAI (commentée) ---
         try:
             client = OpenAI()
             prompt = (
@@ -205,6 +215,8 @@ class Game:
                     number = int(parts[1].strip())
                     if keyword not in all_unrevealed_words: # Vérification supplémentaire
                          print(f"Indice reçu de l'IA : {keyword}, {number}")
+                         self.keyword = keyword
+                         self.number_gess_given = number
                          return keyword, number
                     else:
                          print("Erreur : L'IA a donné un mot présent sur le plateau.")
@@ -216,31 +228,6 @@ class Game:
         except Exception as e:
             print(f"Erreur lors de l'appel à l'API OpenAI : {e}")
             print("Passage à la saisie manuelle de l'indice.")
-        # --- FIN DE LA SECTION POUR L'APPEL LLM OPENAI ---
-
-        # Solution de repli : Saisie manuelle de l'indice
-        while True:
-            try:
-                clue_input = input(f"Espion {self.current_player.upper()}, entrez votre indice (Mot, Chiffre) : ")
-                keyword, number_str = clue_input.split(',')
-                keyword = keyword.strip().upper()
-                number = int(number_str.strip())
-                if number < 0: # 0 est un indice valide (pour passer ou bluffer)
-                    print("Le chiffre doit être au moins 0.")
-                    continue
-                
-                is_on_board = any(self.word_matrix[r][c].upper() == keyword 
-                                  for r in range(self.BOARD_SIZE) 
-                                  for c in range(self.BOARD_SIZE)
-                                  if not self.revealed_matrix[r][c]) # Vérifie seulement les mots non révélés
-                if is_on_board:
-                     print(f"Erreur : Le mot-indice '{keyword}' est un mot non révélé sur le plateau.")
-                     continue
-                return keyword, number
-            except ValueError:
-                print("Format invalide. Utilisez 'Mot, Chiffre'. Exemple : 'Animal, 3'")
-            except Exception as e:
-                 print(f"Une erreur inattendue est survenue lors de la saisie de l'indice: {e}")
 
     def _find_word_coords(self, word_guess):
         """Trouve les coordonnées (ligne, colonne) d'un mot dans word_matrix."""
@@ -328,6 +315,14 @@ class Game:
         """Change le joueur actuel."""
         self.current_player = 'blue' if self.current_player == 'red' else 'red'
 
+
+    def end_round(self):
+        """Change le joueur actuel."""
+        game._switch_player()
+        game.keyword = ""
+        game.number_gess_given = 0
+        game.guesses_correct_this_round = 0
+
     def display_board(self, show_colors=False):
         """Affiche le plateau de jeu dans la console."""
         print("\n--- PLATEAU DE JEU ---")
@@ -358,12 +353,15 @@ if __name__ == "__main__":
     while game is None:
         choice = input("Commencer une nouvelle partie (N) ou charger une partie (C) ? ").strip().upper()
         if choice == 'C':
-            filename = input("Entrez le nom du fichier JSON de la sauvegarde (ex: codenames_save.json): ").strip()
+            # filename = input("Entrez le nom du fichier JSON de la sauvegarde (ex: codenames_save.json): ").strip()
+            filename = "save_game_test.json"
             try:
                 with open(filename, 'r', encoding='utf-8') as f:
                     json_data = f.read()
                 game = Game.from_json_string(json_data)
                 print(f"Partie chargée depuis '{filename}'.")
+                turn_display_counter = 1  # Réinitialiser le compteur de tours 
+                loadingTurn = True
             except FileNotFoundError:
                 print(f"Erreur : Fichier '{filename}' non trouvé.")
             except json.JSONDecodeError:
@@ -373,61 +371,69 @@ if __name__ == "__main__":
                 # Optionnellement, demander à nouveau ou commencer une nouvelle partie
         elif choice == 'N':
             game = Game()
+            turn_display_counter = 1 
+            loadingTurn = False
         else:
             print("Choix invalide. Veuillez entrer 'N' ou 'C'.")
 
-    turn_display_counter = 1 # Compteur simple pour l'affichage des tours
 
     while not game.game_over:
         print(f"\n\n===== TOUR {turn_display_counter} =====")
         print(f"=== C'est à l'équipe {game.current_player.upper()} de jouer ===")
-        game.display_board()
+        if loadingTurn:
+            game.display_board()
+            keyword = game.keyword
+            num_solutions_clue = game.number_gess_given
+            print(f"\nL'équipe {game.current_player.upper()} a reçu l'indice : '{keyword}' pour {num_solutions_clue} mot(s).")
+            max_guesses_this_round = num_solutions_clue + 1 if num_solutions_clue > 0 else 1
+            loadingTurn = False
+        else : 
+            game.display_board()
 
-        # 1. L'espion donne un indice
-        # Si get_clue retourne 0 pour le nombre, l'équipe peut quand même faire une tentative "à l'aveugle" ou passer.
-        keyword, num_solutions_clue = game.get_clue()
-        print(f"\nL'équipe {game.current_player.upper()} a reçu l'indice : '{keyword}' pour {num_solutions_clue} mot(s).")
+            # 1. L'espion donne un indice
+            # Si get_clue retourne 0 pour le nombre, l'équipe peut quand même faire une tentative "à l'aveugle" ou passer.
+            keyword, num_solutions_clue = game.get_clue()
+            print(f"\nL'équipe {game.current_player.upper()} a reçu l'indice : '{keyword}' pour {num_solutions_clue} mot(s).")
 
-        # 2. Phase de devinette
-        # L'équipe peut faire jusqu'à num_solutions_clue + 1 devinettes.
-        # Si num_solutions_clue est 0, ils ont droit à 1 devinette (ou passer).
-        max_guesses_this_round = num_solutions_clue + 1 if num_solutions_clue > 0 else 1
-        guesses_correct_this_round = 0
+            # 2. Phase de devinette
+            # L'équipe peut faire jusqu'à num_solutions_clue + 1 devinettes.
+            # Si num_solutions_clue est 0, ils ont droit à 1 devinette (ou passer).
+            max_guesses_this_round = num_solutions_clue + 1 if num_solutions_clue > 0 else 1
+            game.guesses_correct_this_round = 0
 
-        for attempt_num in range(1, max_guesses_this_round + 1):
+        print ("game.guesses_correct_this_round ", game.guesses_correct_this_round)
+
+        for attempt_num in range(game.guesses_correct_this_round+1, max_guesses_this_round + 1):
             print(f"\nDevinette {attempt_num}/{max_guesses_this_round} pour l'indice '{keyword}, {num_solutions_clue}'.")
             
             # Si toutes les cibles de l'indice ont été trouvées et qu'il reste des tentatives (le +1)
-            if num_solutions_clue > 0 and guesses_correct_this_round == num_solutions_clue and attempt_num > num_solutions_clue:
+            if num_solutions_clue > 0 and game.guesses_correct_this_round == num_solutions_clue and attempt_num > num_solutions_clue:
                  print("Vous avez trouvé tous les mots de l'indice. Ceci est une devinette bonus.")
             elif num_solutions_clue == 0 and attempt_num ==1:
                  print("Indice '0'. Vous pouvez tenter une devinette ou passer.")
+
+            filename_save = "save_game_test.json"
+            with open(filename_save, 'w', encoding='utf-8') as f:
+                f.write(game.to_json_string())
 
 
             guess_word_input = input(f"Équipe {game.current_player.upper()}, quel mot choisissez-vous ? (ou 'PASSE') ").strip().upper()
 
             if guess_word_input == 'PASSE':
                 print("L'équipe passe son tour.")
+                game.end_round()
                 break # Fin du tour de devinette pour cette équipe
 
             guess_status = game.process_guess(guess_word_input)
 
             if guess_status == 'INVALID_WORD':
                 print(f"Le mot '{guess_word_input}' n'est pas sur le plateau. Réessayez cette tentative.")
-                # Ne pas incrémenter attempt_num effectivement, la boucle for le fera, donc on doit "annuler" cette tentative
-                # Pour une meilleure gestion, on pourrait utiliser une boucle while ici.
-                # Pour l'instant, cette tentative est "perdue" si on ne la gère pas finement.
-                # Solution simple: décrémenter le compteur de boucle ou utiliser continue pour refaire la même itération.
-                # Cependant, input() est déjà passé. Une meilleure approche serait une boucle interne pour obtenir un guess valide.
-                # Pour la simplicité actuelle, on note que l'utilisateur perd une "sous-tentative".
-                # On va plutôt faire en sorte que l'utilisateur ne perde pas sa tentative principale.
-                # On peut ajouter une boucle while ici pour redemander tant que le mot est invalide.
                 while guess_status in ['INVALID_WORD', 'ALREADY_REVEALED']:
                     if guess_status == 'INVALID_WORD':
                         print(f"Le mot '{guess_word_input}' n'est pas sur le plateau.")
                     elif guess_status == 'ALREADY_REVEALED':
                         print(f"Le mot '{guess_word_input}' a déjà été révélé.")
-                    guess_word_input = input(f"Veuillez choisir un autre mot (ou 'PASSE') : ").strip().upper()
+                    guess_word_input = input("Veuillez choisir un autre mot (ou 'PASSE') : ").strip().upper()
                     if guess_word_input == 'PASSE': break
                     guess_status = game.process_guess(guess_word_input)
                 if guess_word_input == 'PASSE':
@@ -438,50 +444,44 @@ if __name__ == "__main__":
             if guess_status == 'CORRECT_WIN':
                 # Message de victoire déjà affiché par process_guess
                 game.display_board(show_colors=True)
+                game.end_round()
                 break # Sortir de la boucle des devinettes, game.game_over est True
             elif guess_status == 'ASSASSIN_LOSS':
                 # Message de défaite/victoire adverse déjà affiché
                 game.display_board(show_colors=True)
+                game.end_round()
                 break # Sortir de la boucle des devinettes, game.game_over est True
             elif guess_status == 'NEUTRAL' or guess_status == 'OPPONENT':
                 print("Fin du tour pour cette équipe.")
                 if game.game_over: # L'adversaire a pu gagner
                     print(f"L'équipe {game.winner.upper()} a gagné !")
                     game.display_board(show_colors=True)
+                game.end_round()
                 break # Sortir de la boucle des devinettes
             elif guess_status == 'CORRECT_CONTINUE':
-                guesses_correct_this_round += 1
-                if num_solutions_clue > 0 and guesses_correct_this_round == num_solutions_clue:
+                game.guesses_correct_this_round += 1
+                if num_solutions_clue > 0 and game.guesses_correct_this_round == num_solutions_clue:
                     print(f"Vous avez trouvé les {num_solutions_clue} mots cibles de l'indice !")
                     if attempt_num < max_guesses_this_round:
                          print("Vous avez encore une devinette bonus si vous le souhaitez.")
                     # Si attempt_num == max_guesses_this_round, la boucle se terminera naturellement.
                 elif num_solutions_clue == 0 and guess_status == 'CORRECT_CONTINUE': # Trouvé un mot correct sur un indice 0
                     print("Fin du tour pour cette équipe (indice 0 et mot correct trouvé).")
+                    game.end_round()
                     break # Fin du tour
             
             if game.game_over: # Vérification supplémentaire au cas où
                 break
-        # Fin de la boucle des devinettes pour ce joueur
+
+            filename_save = "save_game_test.json"
+            with open(filename_save, 'w', encoding='utf-8') as f:
+                f.write(game.to_json_string())
+            
+
 
         if game.game_over:
             break # Sortir de la boucle principale du jeu
 
-        # 3. Sauvegarder la partie (optionnel, après chaque tour complet d'une équipe)
-        save_choice = input("\nSauvegarder la partie (O/N) ? ").strip().upper()
-        if save_choice == 'O':
-            filename_save = input("Nom du fichier pour la sauvegarde (ex: codenames_save.json): ").strip()
-            if not filename_save.endswith(".json"):
-                filename_save += ".json"
-            try:
-                with open(filename_save, 'w', encoding='utf-8') as f:
-                    f.write(game.to_json_string())
-                print(f"Partie sauvegardée dans '{filename_save}'")
-            except Exception as e:
-                print(f"Erreur lors de la sauvegarde : {e}")
-
-        # 4. Changer de joueur pour le prochain tour
-        game._switch_player()
         turn_display_counter += 1
     # Fin de la boucle principale du jeu (while not game.game_over)
 
