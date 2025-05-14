@@ -30,7 +30,7 @@ class Game:
     def _initialize_new_game_state(self):
         """Initialise l'état pour une nouvelle partie."""
         print("Initialisation d'une nouvelle partie...")
-        self.id = str(uuid.uuid4()) 
+        self.id_game = str(uuid.uuid4()) 
         
         # Initialisation des matrices vides
         self.color_matrix = [[None for _ in range(self.BOARD_SIZE)] for _ in range(self.BOARD_SIZE)]
@@ -80,7 +80,7 @@ class Game:
                 f"Attendu : {self.BOARD_SIZE}"
             )
 
-        self.id = data['id']
+        self.id_game = data['id_game']
         self.color_matrix = data['color_matrix']
         self.word_matrix = data['word_matrix']
         self.revealed_matrix = data['revealed_matrix']
@@ -108,7 +108,7 @@ class Game:
     def to_json_string(self):
         """Sérialise l'état actuel du jeu en une chaîne JSON."""
         state = {
-            'id': self.id,
+            'id_game': self.id_game,
             'board_size': self.BOARD_SIZE,
             'color_matrix': self.color_matrix,
             'word_matrix': self.word_matrix,
@@ -281,7 +281,7 @@ class Game:
                 self.blue_score += 1
             print(f"Correct ! Score : ROUGE {self.red_score}/{self.red_cards_total} - BLEU {self.blue_score}/{self.blue_cards_total}")
             if self._check_win_condition(): # Vérifie si cette pioche fait gagner
-                return 'CORRECT_WIN', messageUser
+                return 'CORRECT_WIN', messageUser + f"l'equipe {self.winner} a gagné !"
             return 'CORRECT_CONTINUE', messageUser
 
         elif revealed_color == 'neutral':
@@ -325,10 +325,12 @@ class Game:
 
     def end_round(self):
         """Change le joueur actuel."""
-        game._switch_player()
-        game.keyword = ""
-        game.number_gess_given = 0
-        game.guesses_correct_this_round = 0
+        self._switch_player()
+        self.keyword = ""
+        self.number_gess_given = 0
+        self.guesses_correct_this_round = 0
+
+        self.get_clue()
 
     def display_board(self, show_colors=False):
         """Affiche le plateau de jeu dans la console."""
