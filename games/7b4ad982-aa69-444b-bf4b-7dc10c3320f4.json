@@ -1,0 +1,126 @@
+{
+  "id_game": "7b4ad982-aa69-444b-bf4b-7dc10c3320f4",
+  "board_size": 5,
+  "color_matrix": [
+    [
+      "red",
+      "red",
+      "blue",
+      "neutral",
+      "neutral"
+    ],
+    [
+      "red",
+      "blue",
+      "blue",
+      "neutral",
+      "neutral"
+    ],
+    [
+      "neutral",
+      "red",
+      "blue",
+      "blue",
+      "red"
+    ],
+    [
+      "blue",
+      "blue",
+      "blue",
+      "red",
+      "blue"
+    ],
+    [
+      "neutral",
+      "red",
+      "neutral",
+      "red",
+      "assassin"
+    ]
+  ],
+  "word_matrix": [
+    [
+      "SOLDAT",
+      "LUNE",
+      "SOURIS",
+      "BANQUIER",
+      "COEUR"
+    ],
+    [
+      "FEU",
+      "PLAGE",
+      "T\u00c9L\u00c9PHONE",
+      "TOUR",
+      "MAGIE"
+    ],
+    [
+      "PIRATE",
+      "FOR\u00caT",
+      "BIBLIOTH\u00c8QUE",
+      "FUS\u00c9E",
+      "AVION"
+    ],
+    [
+      "NUAGE",
+      "DRAGON",
+      "ROBOT",
+      "CHOCOLAT",
+      "NEIGE"
+    ],
+    [
+      "CHEVAL",
+      "BANANE",
+      "VAMPIRE",
+      "TRAIN",
+      "MIROIR"
+    ]
+  ],
+  "revealed_matrix": [
+    [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    [
+      true,
+      true,
+      true,
+      false,
+      true
+    ],
+    [
+      false,
+      true,
+      true,
+      true,
+      true
+    ],
+    [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    [
+      false,
+      true,
+      false,
+      false,
+      false
+    ]
+  ],
+  "red_score": 7,
+  "blue_score": 9,
+  "current_player": "blue",
+  "red_cards_total": 8,
+  "blue_cards_total": 9,
+  "game_over": true,
+  "winner": "blue",
+  "keyword": "FANTASTIQUE",
+  "number_gess_given": 2,
+  "guesses_correct_this_round": 1,
+  "turn_display_counter": 1
+}

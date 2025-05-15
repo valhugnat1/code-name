@@ -1,3 +1,4 @@
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from typing import List, Dict, Optional
@@ -8,6 +9,15 @@ from enum import Enum
 from game_saving import Game
 
 app = FastAPI(title="Word Game API")
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Or specify exact origins: ["http://localhost:5173"]
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all methods (GET, POST, OPTIONS, etc.)
+    allow_headers=["*"],  # Allow all headers
+)
 
 # Ensure games directory exists
 GAMES_DIR = "games"
@@ -59,7 +69,7 @@ class GuessResponse(BaseModel):
     guess_status: str
     game_over: bool
     userMassage: str
-    # winner: Optional[str]
+    winner: Optional[str]
 
 
 # File operations for game storage
@@ -152,7 +162,8 @@ async def make_guess(request: GuessRequest):
     response = GuessResponse(
         guess_status="",
         game_over=False,
-        userMassage=""
+        userMassage="",
+        winner="",
     )
 
     max_guesses_this_round = game.number_gess_given + 1 if game.number_gess_given > 0 else 1
@@ -188,7 +199,7 @@ async def make_guess(request: GuessRequest):
             response.userMassage += "Fin du tour pour cette équipe.\n"
             print("Fin du tour pour cette équipe.")
             game.end_round()
-            
+
         elif guess_status == 'CORRECT_CONTINUE':
             game.guesses_correct_this_round += 1
             if game.number_gess_given > 0 and game.guesses_correct_this_round == game.number_gess_given:
