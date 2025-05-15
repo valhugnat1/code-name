@@ -2,50 +2,89 @@
   <div class="create-game-container">
     <h1>Create Codenames Game</h1>
 
-    <div class="photo-module">
-      <button @click="triggerFileInput" class="photo-button">
-        <span class="icon">📷</span> Scan Words from Image
-      </button>
-      <input
-        type="file"
-        accept="image/*"
-        capture="environment"
-        ref="fileInput"
-        @change="handleImageUpload"
-        style="display: none"
-      />
-      <div v-if="imagePreviewUrl" class="image-preview-container">
-        <p>Image Preview:</p>
-        <img :src="imagePreviewUrl" alt="Preview" class="image-preview" />
+    <div class="input-options">
+      <!-- Option Photo (existante) -->
+      <div class="photo-module">
+        <!-- <div>
+          <video ref="video" autoplay playsinline></video>
+          <canvas ref="canvas" style="display: none"></canvas>
+          <div>
+            <button @click="startCamera">Démarrer la caméra</button>
+            <button @click="takePhoto">Prendre une photo</button>
+          </div>
+          <div v-if="photo">
+            <h3>Photo capturée :</h3>
+            <img :src="photo" alt="Captured photo" />
+          </div>
+        </div> -->
+        <button @click="triggerFileInput" class="photo-button">
+          <span class="icon">📷</span> Scan Words from the Photo
+        </button>
+        <input
+          type="file"
+          accept="image/*"
+          capture="environment"
+          ref="fileInput"
+          @change="handleImageUpload"
+          style="display: none"
+        />
+        <div v-if="imagePreviewUrl" class="image-preview-container">
+          <p>Image Preview:</p>
+          <img :src="imagePreviewUrl" alt="Preview" class="image-preview" />
+        </div>
+        <div v-if="isAnalysing" class="loading-analysis">
+          <p>Analysing image, please wait...</p>
+          <div class="spinner"></div>
+        </div>
       </div>
-      <div v-if="isAnalysing" class="loading-analysis">
-        <p>Analysing image, please wait...</p>
-        <div class="spinner"></div>
-      </div>
-      <div v-if="extractedWords.length > 0" class="extracted-words-container">
-        <h2>Extracted Words:</h2>
-        <ul class="extracted-words-list">
-          <li v-for="(word, index) in extractedWords" :key="index">
-            {{ word }}
-          </li>
-        </ul>
-        <p v-if="extractedWords.length !== 25" class="warning-text">
-          Warning: {{ extractedWords.length }} words were extracted. The game
-          requires 25 words. The game will be launched with these words, padded
-          or truncated if necessary.
-        </p>
+
+      <!-- Nouvelle option File Upload -->
+      <div class="file-module">
+        <button @click="triggerTextFileInput" class="file-button">
+          <span class="icon">📄</span> Upload Words from File
+        </button>
+        <input
+          type="file"
+          accept=".txt,.csv"
+          ref="textFileInput"
+          @change="handleFileUpload"
+          style="display: none"
+        />
+        <div v-if="uploadedFileName" class="file-info">
+          <p>File uploaded: {{ uploadedFileName }}</p>
+        </div>
+        <div v-if="isParsingFile" class="loading-analysis">
+          <p>Parsing file, please wait...</p>
+          <div class="spinner"></div>
+        </div>
       </div>
     </div>
+
+    <!-- Section des mots extraits (commune aux deux méthodes) -->
+    <div v-if="extractedWords.length > 0" class="extracted-words-container">
+      <h2>Extracted Words:</h2>
+      <ul class="extracted-words-list">
+        <li v-for="(word, index) in extractedWords" :key="index">
+          {{ word }}
+        </li>
+      </ul>
+      <p v-if="extractedWords.length !== 25" class="warning-text">
+        Warning: {{ extractedWords.length }} words were extracted. The game
+        requires 25 words. The game will be launched with these words, padded or
+        truncated if necessary.
+      </p>
+    </div>
+
     <button
       @click="handleCreateGame"
-      :disabled="isLoading || isAnalysing"
+      :disabled="isLoading || isAnalysing || isParsingFile"
       class="launch-button"
     >
       {{
         isLoading
           ? "Creating..."
           : extractedWords.length > 0
-          ? "Launch Game with Scanned Words"
+          ? "Launch Game with Extracted Words"
           : "Launch Game with Default Words"
       }}
     </button>
@@ -57,6 +96,33 @@
 import { ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import axios from "axios"; // Vous l'utiliserez pour l'appel à GPT-4o et pour la création du jeu
+
+const video = ref(null);
+const canvas = ref(null);
+const photo = ref(null);
+let stream = null;
+
+const startCamera = async () => {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    video.value.srcObject = stream;
+  } catch (error) {
+    console.error("Erreur accès caméra :", error);
+  }
+};
+
+const takePhoto = () => {
+  const width = video.value.videoWidth;
+  const height = video.value.videoHeight;
+
+  canvas.value.width = width;
+  canvas.value.height = height;
+
+  const context = canvas.value.getContext("2d");
+  context.drawImage(video.value, 0, 0, width, height);
+
+  photo.value = canvas.value.toDataURL("image/png");
+};
 
 const router = useRouter();
 const defaultWords = [
@@ -94,7 +160,12 @@ const errorMessage = ref("");
 const fileInput = ref(null); // Référence à l'élément input file
 const imagePreviewUrl = ref(""); // URL pour l'aperçu de l'image
 const isAnalysing = ref(false); // État pendant l'analyse de l'image
-const extractedWords = ref([]); // Mots extraits de l'image
+const extractedWords = ref([]); // Mots extraits de l'image ou du fichier
+
+// Nouvelles références pour le module fichier
+const textFileInput = ref(null); // Référence à l'élément input file pour les fichiers texte
+const uploadedFileName = ref(""); // Nom du fichier téléchargé
+const isParsingFile = ref(false); // État pendant l'analyse du fichier
 
 // Surveiller les changements dans extractedWords pour mettre à jour words
 watch(extractedWords, (newWords) => {
@@ -112,13 +183,16 @@ watch(extractedWords, (newWords) => {
   }
 });
 
+// Fonctions pour le module photo
 function triggerFileInput() {
   extractedWords.value = []; // Réinitialiser les mots extraits précédents
   imagePreviewUrl.value = ""; // Réinitialiser l'aperçu
+  uploadedFileName.value = ""; // Réinitialiser le nom du fichier téléchargé
   if (fileInput.value) {
     fileInput.value.click(); // Ouvre le sélecteur de fichier/caméra
   }
 }
+
 async function handleImageUpload(event) {
   const file = event.target.files[0];
   if (!file) {
@@ -153,6 +227,91 @@ async function handleImageUpload(event) {
       fileInput.value.value = "";
     }
   }
+}
+
+// Nouvelles fonctions pour le module fichier
+function triggerTextFileInput() {
+  extractedWords.value = []; // Réinitialiser les mots extraits précédents
+  imagePreviewUrl.value = ""; // Réinitialiser l'aperçu de l'image
+  uploadedFileName.value = ""; // Réinitialiser le nom du fichier téléchargé
+  if (textFileInput.value) {
+    textFileInput.value.click(); // Ouvre le sélecteur de fichier texte
+  }
+}
+
+async function handleFileUpload(event) {
+  const file = event.target.files[0];
+  if (!file) {
+    return;
+  }
+
+  uploadedFileName.value = file.name;
+  isParsingFile.value = true;
+  errorMessage.value = "";
+
+  try {
+    // Lecture et traitement du fichier
+    const words = await extractWordsFromFile(file);
+
+    console.log("File analysis complete. Words:", words);
+    extractedWords.value = words;
+  } catch (error) {
+    console.error("Error processing file:", error);
+    errorMessage.value = `Failed to process file: ${error.message}. Using default words.`;
+    extractedWords.value = []; // Réinitialiser en cas d'erreur
+    words.value = [...defaultWords]; // S'assurer que words a les valeurs par défaut
+  } finally {
+    isParsingFile.value = false;
+    // Réinitialiser la valeur du champ de fichier pour permettre la re-sélection du même fichier
+    if (textFileInput.value) {
+      textFileInput.value.value = "";
+    }
+  }
+}
+
+// Fonction pour extraire des mots à partir d'un fichier texte ou CSV
+async function extractWordsFromFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      try {
+        const content = e.target.result;
+        let words = [];
+
+        // Vérification de l'extension du fichier
+        if (file.name.toLowerCase().endsWith(".csv")) {
+          // Traitement CSV simple (séparation par virgules)
+          const lines = content.split(/\r?\n/);
+          lines.forEach((line) => {
+            if (line.trim()) {
+              // Diviser par virgules et nettoyer les espaces
+              const lineWords = line
+                .split(",")
+                .map((word) => word.trim())
+                .filter((word) => word);
+              words = words.concat(lineWords);
+            }
+          });
+        } else {
+          // Traitement fichier texte (un mot par ligne)
+          const lines = content.split(/\r?\n/);
+          words = lines.map((line) => line.trim()).filter((word) => word);
+        }
+
+        // Limite à 25 mots maximum
+        resolve(words.slice(0, 25));
+      } catch (error) {
+        reject(error);
+      }
+    };
+
+    reader.onerror = () => {
+      reject(new Error("Error reading file"));
+    };
+
+    reader.readAsText(file);
+  });
 }
 
 // Il est préférable de stocker la clé API dans une variable d'environnement
@@ -296,16 +455,25 @@ async function handleCreateGame() {
   text-align: center;
 }
 
+/* Style pour les conteneurs d'options */
+.input-options {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
 /* Styles pour le module photo */
-.photo-module {
-  margin-bottom: 25px;
+.photo-module,
+.file-module {
   padding: 15px;
   border: 1px solid #e0e0e0;
   border-radius: 6px;
   background-color: #f9f9f9;
 }
 
-.photo-button {
+.photo-button,
+.file-button {
   background-color: #007bff;
   color: white;
   padding: 10px 20px;
@@ -318,9 +486,21 @@ async function handleCreateGame() {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
+  justify-content: center;
 }
 
-.photo-button .icon {
+/* Couleur différente pour le bouton de fichier */
+.file-button {
+  background-color: #6c757d;
+}
+
+.file-button:hover {
+  background-color: #5a6268;
+}
+
+.photo-button .icon,
+.file-button .icon {
   font-size: 1.2em;
 }
 
@@ -328,7 +508,8 @@ async function handleCreateGame() {
   background-color: #0056b3;
 }
 
-.image-preview-container {
+.image-preview-container,
+.file-info {
   margin-top: 15px;
   text-align: center;
 }
@@ -407,32 +588,6 @@ async function handleCreateGame() {
   text-align: center;
 }
 
-/* Styles pour la grille de saisie (commentée mais peut être réutilisée) */
-.words-input-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.word-input-item {
-  display: flex;
-  flex-direction: column;
-}
-
-.word-input-item label {
-  font-size: 0.8em;
-  margin-bottom: 3px;
-  color: #555;
-}
-
-.word-input-item input {
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 0.9em;
-}
-
 .launch-button {
   /* Styles pour le bouton principal */
   background-color: #5cb85c;
@@ -458,5 +613,17 @@ async function handleCreateGame() {
   color: #d9534f; /* Rouge pour les erreurs */
   margin-top: 15px;
   font-weight: bold;
+}
+
+/* Media queries pour la mise en page responsive */
+@media (min-width: 768px) {
+  .input-options {
+    flex-direction: row;
+  }
+
+  .photo-module,
+  .file-module {
+    width: 50%;
+  }
 }
 </style>
