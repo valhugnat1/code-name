@@ -7,17 +7,14 @@
     {{ word }}
   </button>
 </template>
-
 <script setup>
 import { computed } from "vue";
-
 const props = defineProps({
   word: String,
   isRevealed: Boolean,
   color: String, // 'red', 'blue', 'neutral', 'assassin', or 'hidden'
   isDisabled: Boolean,
 });
-
 const cardColorClass = computed(() => {
   if (!props.isRevealed) {
     return "card-hidden";
@@ -36,7 +33,6 @@ const cardColorClass = computed(() => {
   }
 });
 </script>
-
 <style scoped>
 .card {
   display: flex;
@@ -58,12 +54,10 @@ const cardColorClass = computed(() => {
   background-color: #fff; /* Default for hidden */
   color: #333;
 }
-
 .card:not(.revealed):not(.disabled):hover {
   background-color: #f0f0f0;
   transform: translateY(-2px);
 }
-
 .card.revealed {
   cursor: default;
   color: white; /* Default text color for revealed cards */
@@ -80,13 +74,11 @@ const cardColorClass = computed(() => {
 .card.disabled:hover {
   transform: none;
 }
-
 .card-hidden {
   background-color: #ffffff;
   color: #333333;
   border: 2px dashed #bbbbbb;
 }
-
 .card-red {
   background-color: #d9534f; /* Bootstrap danger */
 }
@@ -99,5 +91,27 @@ const cardColorClass = computed(() => {
 }
 .card-assassin {
   background-color: #292b2c; /* Bootstrap inverse/dark */
+}
+
+/* Landscape mode specific styling for cards */
+@media screen and (orientation: landscape) and (max-width: 1024px) {
+  .card {
+    padding: 5px;
+    font-size: 0.8em; /* Reduce font size */
+    margin: auto; /* Center the card within its cell */
+  }
+
+  /* Adjust hover effect for smaller cards */
+  .card:not(.revealed):not(.disabled):hover {
+    transform: translateY(-1px);
+  }
+}
+
+/* Further adjustments for very small screens */
+@media screen and (orientation: landscape) and (max-height: 500px) {
+  .card {
+    font-size: 0.7em;
+    padding: 3px;
+  }
 }
 </style>

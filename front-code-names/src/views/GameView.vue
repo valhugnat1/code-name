@@ -2,29 +2,72 @@
   <div v-if="isLoading" class="loading">Loading game data...</div>
   <div v-if="errorMessage" class="error">{{ errorMessage }}</div>
   <div v-if="!isLoading && gameData" class="game-container">
-    <div class="top-panels">
-      <ClueDisplay
-        :currentClue="gameData.current_clue"
-        :currentClueNumber="gameData.current_clue_number"
-        :guessesCorrectThisRound="gameData.guesses_correct_this_round"
-        :currentPLayer="gameData.current_player"
+    <!-- Desktop layout -->
+    <div class="desktop-layout">
+      <div class="top-panels">
+        <ClueDisplay
+          :currentClue="gameData.current_clue"
+          :currentClueNumber="gameData.current_clue_number"
+          :guessesCorrectThisRound="gameData.guesses_correct_this_round"
+          :currentPLayer="gameData.current_player"
+        />
+        <ScoreBoard
+          :redScore="gameData.red_score"
+          :blueScore="gameData.blue_score"
+          :userMessage="userMessage"
+        />
+      </div>
+
+      <GameBoard
+        :wordMatrix="gameData.word_matrix"
+        :colorMatrix="gameData.color_matrix"
+        :revealedMatrix="gameData.revealed_matrix"
+        :isGameOver="!!gameData.winner"
+        @card-clicked="handleCardGuess"
       />
-      <ScoreBoard
-        :redScore="gameData.red_score"
-        :blueScore="gameData.blue_score"
-        :userMessage="userMessage"
-      />
+
+      <button
+        class="pass-button desktop-pass"
+        @click="handleCardGuess('PASSE')"
+      >
+        Pass
+      </button>
     </div>
 
-    <GameBoard
-      :wordMatrix="gameData.word_matrix"
-      :colorMatrix="gameData.color_matrix"
-      :revealedMatrix="gameData.revealed_matrix"
-      :isGameOver="!!gameData.winner"
-      @card-clicked="handleCardGuess"
-    />
+    <!-- Mobile landscape layout - Only displays in landscape mode on mobile -->
+    <div class="mobile-landscape-layout">
+      <!-- Left column for mobile landscape mode -->
+      <div class="left-column">
+        <ClueDisplay
+          :currentClue="gameData.current_clue"
+          :currentClueNumber="gameData.current_clue_number"
+          :guessesCorrectThisRound="gameData.guesses_correct_this_round"
+          :currentPLayer="gameData.current_player"
+          class="clue-display"
+        />
+        <ScoreBoard
+          :redScore="gameData.red_score"
+          :blueScore="gameData.blue_score"
+          :userMessage="userMessage"
+          class="score-board"
+        />
+      </div>
 
-    <button class="pass-button" @click="handleCardGuess('PASSE')">Pass</button>
+      <!-- Right column - game board -->
+      <div class="right-column">
+        <GameBoard
+          :wordMatrix="gameData.word_matrix"
+          :colorMatrix="gameData.color_matrix"
+          :revealedMatrix="gameData.revealed_matrix"
+          :isGameOver="!!gameData.winner"
+          @card-clicked="handleCardGuess"
+          class="game-board"
+        />
+        <button class="pass-button" @click="handleCardGuess('PASSE')">
+          Pass
+        </button>
+      </div>
+    </div>
 
     <div v-if="gameData.winner" class="winner-announcement">
       <h2>Game Over! {{ gameData.winner.toUpperCase() }} team wins!</h2>
@@ -155,18 +198,53 @@ watch(
 .game-container {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: anchor-center;
   gap: 20px;
-  padding: 20px;
+  /* padding: 20px; */
+  width: 100%;
+}
+
+/* Desktop layout styling */
+.desktop-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
 }
 
 .top-panels {
   display: flex;
   justify-content: space-around;
   width: 100%;
-  max-width: 900px; /* Adjust as needed */
+  max-width: 900px;
   gap: 20px;
   margin-bottom: 20px;
+}
+
+.desktop-pass {
+  margin-top: 10px;
+}
+
+/* Mobile landscape layout styling - Hidden by default */
+.mobile-landscape-layout {
+  display: none;
+  width: 100%;
+  max-width: 1200px;
+}
+
+.pass-button {
+  background-color: #e1b475;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.pass-button:hover {
+  background-color: #d0a365;
 }
 
 .winner-announcement {
@@ -177,20 +255,121 @@ watch(
   border: 1px solid #d6e9c6;
   border-radius: 8px;
   text-align: center;
+  width: 100%;
+  max-width: 900px;
 }
+
 .winner-announcement button {
   margin-top: 10px;
   background-color: #5cb85c;
   color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
 }
+
 .winner-announcement button:hover {
   background-color: #4cae4c;
 }
 
-.pass-button {
-  background-color: #e1b475;
-  color: white;
-  margin-top: 10px;
-  padding: 1% 3%;
+/* Mobile landscape mode specific layout */
+@media screen and (orientation: landscape) and (max-width: 1024px) {
+  /* Hide desktop layout on mobile landscape */
+  .desktop-layout {
+    display: none;
+  }
+
+  /* Show mobile landscape layout */
+  .mobile-landscape-layout {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 20px;
+  }
+
+  .left-column {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start; /* Items will stack from top with no extra spacing */
+    gap: 8px; /* Optional: consistent small space between items */
+  }
+
+  .right-column {
+    width: 70%;
+    display: flex;
+    flex-direction: column; /* Disposition en colonne */
+    align-items: flex-end; /* Aligné à gauche */
+    justify-content: flex-start; /* En haut (optionnel) */
+    margin-right: 20px;
+  }
+
+  .clue-display {
+    margin-bottom: 0;
+  }
+
+  .score-board {
+    margin: 0;
+  }
+
+  .pass-button {
+    margin-top: 10px;
+  }
+
+  .game-board {
+    width: 70%;
+    height: 65%;
+  }
+}
+
+/* Additional media query for very small screens */
+@media screen and (orientation: landscape) and (max-height: 500px) {
+  .mobile-landscape-layout {
+    padding: 10px;
+  }
+
+  .left-column {
+    width: 35%;
+  }
+
+  .right-column {
+    width: 65%;
+  }
+}
+
+.loading {
+  text-align: center;
+  padding: 20px;
+  font-size: 18px;
+}
+
+.error {
+  color: #a94442;
+  background-color: #f2dede;
+  border: 1px solid #ebccd1;
+  border-radius: 4px;
+  padding: 15px;
+  margin-bottom: 20px;
+  text-align: center;
+  width: 100%;
+  max-width: 900px;
+}
+
+@media screen and (orientation: landscape) and (max-width: 1024px) {
+  .winner-announcement {
+    position: absolute;
+    top: 10%;
+    left: 5%;
+    z-index: 1000;
+    background-color: rgba(223, 240, 216, 0.9); /* Slight transparency */
+    color: #3c763d;
+    border: 1px solid #d6e9c6;
+    border-radius: 8px;
+    text-align: center;
+    padding: 16px;
+    width: 90%;
+    max-width: 320px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
 }
 </style>

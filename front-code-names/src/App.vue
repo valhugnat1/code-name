@@ -38,4 +38,32 @@ button:disabled {
 .loading {
   font-style: italic;
 }
+
+/* Smartphone landscape mode optimizations */
+@media screen and (orientation: landscape) and (max-width: 1024px) {
+  #app {
+    padding: 5px; /* Reduced padding from 20px to 5px */
+  }
+
+  button {
+    padding: 5px 10px; /* Reduced button padding */
+    font-size: 0.9em; /* Slightly smaller font for buttons */
+  }
+
+  .error {
+    margin-top: 5px; /* Reduced error margin */
+  }
+}
+
+/* Even more compact for very small screens */
+@media screen and (orientation: landscape) and (max-height: 500px) {
+  #app {
+    padding: 3px; /* Minimal padding */
+  }
+
+  button {
+    padding: 3px 8px; /* Minimal button padding */
+    font-size: 0.85em;
+  }
+}
 </style>
