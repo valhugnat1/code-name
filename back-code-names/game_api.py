@@ -6,7 +6,7 @@ import uvicorn
 import json
 import os
 from enum import Enum
-from game_saving import Game
+from game_logic import Game
 
 app = FastAPI(title="Word Game API")
 
