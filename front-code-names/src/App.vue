@@ -40,6 +40,13 @@ button:disabled {
 }
 
 /* Smartphone landscape mode optimizations */
+@media screen and (max-width: 1024px) {
+  body {
+    width: fit-content;
+  }
+}
+
+/* Smartphone landscape mode optimizations */
 @media screen and (orientation: landscape) and (max-width: 1024px) {
   #app {
     padding: 5px; /* Reduced padding from 20px to 5px */
@@ -57,6 +64,9 @@ button:disabled {
 
 /* Even more compact for very small screens */
 @media screen and (orientation: landscape) and (max-height: 500px) {
+  body {
+    width: fit-content;
+  }
   #app {
     padding: 3px; /* Minimal padding */
   }
