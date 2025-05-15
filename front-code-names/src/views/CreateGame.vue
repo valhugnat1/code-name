@@ -1,14 +1,14 @@
 <template>
   <div class="create-game-container">
     <h1>Create Codenames Game</h1>
-    <div class="words-input-grid">
+    <!-- <div class="words-input-grid">
       <div v-for="(word, index) in words" :key="index" class="word-input-item">
         <label :for="'word-' + index">Word {{ index + 1 }}</label>
         <input type="text" v-model="words[index]" :id="'word-' + index" />
       </div>
-    </div>
+    </div> -->
     <button @click="handleCreateGame" :disabled="isLoading">
-      {{ isLoading ? "Creating..." : "Create Game" }}
+      {{ isLoading ? "Creating..." : "Launch Game" }}
     </button>
     <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
   </div>

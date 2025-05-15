@@ -60,6 +60,7 @@ class GameStateResponse(BaseModel):
     color_matrix: List[List[str]]
     word_matrix: List[List[str]]
     revealed_matrix: List[List[bool]]
+    current_player: str
 
 class GuessRequest(BaseModel):
     game_id: str
@@ -138,6 +139,7 @@ async def get_game_state(game_id: str):
 
 
     print(f"\nDevinette {attempt_num}/{max_guesses_this_round} pour l'indice '{keyword}, {game.number_gess_given}'.")
+    print (game.current_player)
     
     return GameStateResponse(
         current_clue=game.keyword,
@@ -228,4 +230,4 @@ async def make_guess(request: GuessRequest):
     return response
 
 if __name__ == "__main__":
-    uvicorn.run("api_codename:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("game_api:app", host="0.0.0.0", port=8000, reload=True)

@@ -7,6 +7,7 @@
         :currentClue="gameData.current_clue"
         :currentClueNumber="gameData.current_clue_number"
         :guessesCorrectThisRound="gameData.guesses_correct_this_round"
+        :currentPLayer="gameData.current_player"
       />
       <ScoreBoard
         :redScore="gameData.red_score"
@@ -58,6 +59,8 @@ async function fetchGameData() {
   try {
     const response = await axios.get(`/game/${props.gameId}`);
     gameData.value = response.data;
+    console.log(gameData);
+
     // The GET /game/{game_id} response doesn't include the 'userMassage' from the /guess endpoint.
     // We'll update userMessage primarily after a guess.
     // You might want to add a general 'current turn' message here if available from gameData.

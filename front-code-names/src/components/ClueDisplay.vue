@@ -12,16 +12,18 @@
         <strong>Guesses Remaining:</strong>
         {{ guessesLeft >= 0 ? guessesLeft : "N/A" }}
       </p>
+      <p>
+        <strong>Current player: </strong>
+        <span :class="playerColorClass">{{ currentPLayer }}</span>
+      </p>
     </div>
     <div v-else>
       <p>Waiting for the Spymaster's clue...</p>
     </div>
   </div>
 </template>
-
 <script setup>
 import { computed } from "vue";
-
 const props = defineProps({
   currentClue: String,
   currentClueNumber: Number,
@@ -30,8 +32,8 @@ const props = defineProps({
     type: Number,
     default: 0,
   },
+  currentPLayer: String,
 });
-
 const guessesLeft = computed(() => {
   if (props.currentClueNumber === null || props.currentClueNumber === undefined)
     return "N/A";
@@ -40,8 +42,20 @@ const guessesLeft = computed(() => {
   // The backend provides `guesses_correct_this_round` which seems to track successful guesses within the current clue's scope.
   return props.currentClueNumber - props.guessesCorrectThisRound;
 });
-</script>
 
+const playerColorClass = computed(() => {
+  // Assuming the currentPLayer string contains the team name/color (e.g., "Blue Team" or "Red Team")
+  if (!props.currentPLayer) return "";
+
+  const playerLower = props.currentPLayer.toLowerCase();
+  if (playerLower.includes("red")) {
+    return "red-player";
+  } else if (playerLower.includes("blue")) {
+    return "blue-player";
+  }
+  return "";
+});
+</script>
 <style scoped>
 .clue-display-module {
   background-color: #fff;
@@ -63,5 +77,15 @@ const guessesLeft = computed(() => {
 }
 .clue-display-module strong {
   color: #555;
+}
+.red-player {
+  color: #d9534f;
+  font-weight: bold;
+  text-transform: capitalize;
+}
+.blue-player {
+  color: #337ab7;
+  font-weight: bold;
+  text-transform: capitalize;
 }
 </style>
