@@ -2,6 +2,9 @@ import random
 import json
 import uuid # Ajout de l'import pour la sérialisation JSON
 
+from dotenv import load_dotenv
+import os
+
 # Pour utiliser l'API OpenAI, vous devez l'installer : pip install openai
 # et configurer votre clé API (par exemple via une variable d'environnement OPENAI_API_KEY)
 # import openai
@@ -198,7 +201,10 @@ class Game:
 
 
         try:
-            client = OpenAI()
+            api_key = os.getenv("OPENAI_API_KEY")
+            if not api_key:
+                raise ValueError("Clé API OpenAI non trouvée dans les variables d'environnement.")
+            client = OpenAI(api_key=api_key)
             prompt = (
                 f"Vous êtes l'espion de l'équipe {self.current_player} dans une partie de Codenames.\n"
                 f"Voici les mots que votre équipe doit deviner : {', '.join(target_words)}\n"
