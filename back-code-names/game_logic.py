@@ -15,7 +15,7 @@ class Game:
     """
     BOARD_SIZE = 5
 
-    def __init__(self, load_data=None):
+    def __init__(self, game_words=None, load_data=None):
         """
         Initialise une nouvelle partie ou charge une partie depuis des données.
         Args:
@@ -25,9 +25,9 @@ class Game:
         if load_data:
             self._load_state_from_data(load_data)
         else:
-            self._initialize_new_game_state()
+            self._initialize_new_game_state(game_words)
 
-    def _initialize_new_game_state(self):
+    def _initialize_new_game_state(self, game_words):
         """Initialise l'état pour une nouvelle partie."""
         print("Initialisation d'une nouvelle partie...")
         self.id_game = str(uuid.uuid4()) 
@@ -61,7 +61,7 @@ class Game:
 
         # Initialisation des matrices de mots et couleurs (avec placeholders pour votre code)
         self._initialize_color_matrix()
-        self._initialize_word_matrix()
+        self._initialize_word_matrix(game_words)
 
         print(f"Objectif : {self.red_cards_total} cartes pour ROUGE, {self.blue_cards_total} cartes pour BLEU.")
 
@@ -149,24 +149,24 @@ class Game:
                 k += 1
         print("Matrice des couleurs initialisée.")
 
-    def _initialize_word_matrix(self):
+    def _initialize_word_matrix(self, game_words):
         """
         Méthode pour initialiser la matrice des mots.
         !!! REMPLACEZ CE CODE PAR VOTRE LOGIQUE D'INITIALISATION !!!
         """
         print("Initialisation de la matrice des mots (placeholder)...")
-        words = [
-            "LUNE", "CHEVAL", "PIRATE", "MIROIR", "CHOCOLAT",
-            "ROBOT", "PLAGE", "VAMPIRE", "TOUR", "FEU",
-            "AVION", "BANANE", "NEIGE", "BANQUIER", "DRAGON",
-            "SOURIS", "BIBLIOTHÈQUE", "COEUR", "NUAGE", "TRAIN",
-            "FUSÉE", "TÉLÉPHONE", "MAGIE", "SOLDAT", "FORÊT"
-        ]
-        random.shuffle(words)
+        # words = [
+        #     "LUNE", "CHEVAL", "PIRATE", "MIROIR", "CHOCOLAT",
+        #     "ROBOT", "PLAGE", "VAMPIRE", "TOUR", "FEU",
+        #     "AVION", "BANANE", "NEIGE", "BANQUIER", "DRAGON",
+        #     "SOURIS", "BIBLIOTHÈQUE", "COEUR", "NUAGE", "TRAIN",
+        #     "FUSÉE", "TÉLÉPHONE", "MAGIE", "SOLDAT", "FORÊT"
+        # ]
+        # random.shuffle(words)
         k = 0
         for r in range(self.BOARD_SIZE):
             for c in range(self.BOARD_SIZE):
-                self.word_matrix[r][c] = words[k]
+                self.word_matrix[r][c] = game_words[k]
                 k += 1
         print("Matrice des mots initialisée.")
 
@@ -354,136 +354,3 @@ class Game:
                  print("-" * (col_width * self.BOARD_SIZE + (self.BOARD_SIZE -1) * 3)) # Ligne séparatrice
         print("=" * (col_width * self.BOARD_SIZE + (self.BOARD_SIZE-1) * 3)) # Ligne finale
         print(f"Score : ROUGE {self.red_score}/{self.red_cards_total} - BLEU {self.blue_score}/{self.blue_cards_total}")
-
-
-# --- Logique principale du jeu (anciennement play_turn et boucle de jeu) ---
-if __name__ == "__main__":
-    game = None
-    while game is None:
-        choice = input("Commencer une nouvelle partie (N) ou charger une partie (C) ? ").strip().upper()
-        if choice == 'C':
-            # filename = input("Entrez le nom du fichier JSON de la sauvegarde (ex: codenames_save.json): ").strip()
-            filename = "save_game_test.json"
-            try:
-                with open(filename, 'r', encoding='utf-8') as f:
-                    json_data = f.read()
-                game = Game.from_json_string(json_data)
-                print(f"Partie chargée depuis '{filename}'.")
-                loadingTurn = True
-            except FileNotFoundError:
-                print(f"Erreur : Fichier '{filename}' non trouvé.")
-            except json.JSONDecodeError:
-                print(f"Erreur : Le fichier '{filename}' ne contient pas de JSON valide.")
-            except Exception as e:
-                print(f"Erreur inattendue lors du chargement de la partie : {e}")
-                # Optionnellement, demander à nouveau ou commencer une nouvelle partie
-        elif choice == 'N':
-            game = Game()
-            game.turn_display_counter = 1 
-            loadingTurn = False
-        else:
-            print("Choix invalide. Veuillez entrer 'N' ou 'C'.")
-
-    while not game.game_over:
-        print(f"\n\n===== TOUR {game.turn_display_counter} =====")
-        print(f"=== C'est à l'équipe {game.current_player.upper()} de jouer ===")
-        if loadingTurn:
-            keyword = game.keyword
-            num_solutions_clue = game.number_gess_given
-            loadingTurn = False
-        else : 
-            keyword, num_solutions_clue = game.get_clue()
-            game.guesses_correct_this_round = 0
-       
-        game.display_board()
-        print(f"\nL'équipe {game.current_player.upper()} a reçu l'indice : '{keyword}' pour {num_solutions_clue} mot(s).") 
-        max_guesses_this_round = num_solutions_clue + 1 if num_solutions_clue > 0 else 1
-
-        for attempt_num in range(game.guesses_correct_this_round+1, max_guesses_this_round + 1):
-            print(f"\nDevinette {attempt_num}/{max_guesses_this_round} pour l'indice '{keyword}, {num_solutions_clue}'.")
-            
-            # Si toutes les cibles de l'indice ont été trouvées et qu'il reste des tentatives (le +1)
-            if num_solutions_clue > 0 and game.guesses_correct_this_round == num_solutions_clue and attempt_num > num_solutions_clue:
-                 print("Vous avez trouvé tous les mots de l'indice. Ceci est une devinette bonus.")
-            elif num_solutions_clue == 0 and attempt_num ==1:
-                 print("Indice '0'. Vous pouvez tenter une devinette ou passer.")
-
-            filename_save = "save_game_test.json"
-            with open(filename_save, 'w', encoding='utf-8') as f:
-                f.write(game.to_json_string())
-
-
-            guess_word_input = input(f"Équipe {game.current_player.upper()}, quel mot choisissez-vous ? (ou 'PASSE') ").strip().upper()
-
-            if guess_word_input == 'PASSE':
-                print("L'équipe passe son tour.")
-                game.end_round()
-                break # Fin du tour de devinette pour cette équipe
-
-            guess_status, _ = game.process_guess(guess_word_input)
-
-            if guess_status == 'INVALID_WORD':
-                print(f"Le mot '{guess_word_input}' n'est pas sur le plateau. Réessayez cette tentative.")
-                while guess_status in ['INVALID_WORD', 'ALREADY_REVEALED']:
-                    if guess_status == 'INVALID_WORD':
-                        print(f"Le mot '{guess_word_input}' n'est pas sur le plateau.")
-                    elif guess_status == 'ALREADY_REVEALED':
-                        print(f"Le mot '{guess_word_input}' a déjà été révélé.")
-                    guess_word_input = input("Veuillez choisir un autre mot (ou 'PASSE') : ").strip().upper()
-                    if guess_word_input == 'PASSE': break
-                    guess_status = game.process_guess(guess_word_input)
-                if guess_word_input == 'PASSE':
-                    print("L'équipe passe son tour.")
-                    break # Sortir de la boucle des devinettes
-
-
-            if guess_status == 'CORRECT_WIN':
-                # Message de victoire déjà affiché par process_guess
-                game.display_board(show_colors=True)
-                game.end_round()
-                break # Sortir de la boucle des devinettes, game.game_over est True
-            elif guess_status == 'ASSASSIN_LOSS':
-                # Message de défaite/victoire adverse déjà affiché
-                game.display_board(show_colors=True)
-                game.end_round()
-                break # Sortir de la boucle des devinettes, game.game_over est True
-            elif guess_status == 'NEUTRAL' or guess_status == 'OPPONENT':
-                print("Fin du tour pour cette équipe.")
-                if game.game_over: # L'adversaire a pu gagner
-                    print(f"L'équipe {game.winner.upper()} a gagné !")
-                    game.display_board(show_colors=True)
-                game.end_round()
-                break # Sortir de la boucle des devinettes
-            elif guess_status == 'CORRECT_CONTINUE':
-                game.guesses_correct_this_round += 1
-                if num_solutions_clue > 0 and game.guesses_correct_this_round == num_solutions_clue:
-                    print(f"Vous avez trouvé les {num_solutions_clue} mots cibles de l'indice !")
-                    if attempt_num < max_guesses_this_round:
-                         print("Vous avez encore une devinette bonus si vous le souhaitez.")
-                    # Si attempt_num == max_guesses_this_round, la boucle se terminera naturellement.
-                elif num_solutions_clue == 0 and guess_status == 'CORRECT_CONTINUE': # Trouvé un mot correct sur un indice 0
-                    print("Fin du tour pour cette équipe (indice 0 et mot correct trouvé).")
-                    game.end_round()
-                    break # Fin du tour
-            
-            if game.game_over: # Vérification supplémentaire au cas où
-                break
-
-            filename_save = "save_game_test.json"
-            with open(filename_save, 'w', encoding='utf-8') as f:
-                f.write(game.to_json_string())
-
-        if game.game_over:
-            break # Sortir de la boucle principale du jeu
-
-        game.turn_display_counter += 1
-    # Fin de la boucle principale du jeu (while not game.game_over)
-
-    print("\n\n===== FIN DE LA PARTIE =====")
-    if game.winner:
-        print(f"L'équipe {game.winner.upper()} a remporté la victoire !")
-    elif game.game_over: # Si game_over mais pas de gagnant (ne devrait pas arriver ici)
-        print("La partie est terminée.")
-    else: # Si la boucle s'est arrêtée pour une autre raison (ne devrait pas arriver)
-        print("La partie s'est terminée de manière inattendue.")
-

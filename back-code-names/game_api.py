@@ -109,7 +109,8 @@ def load_game(game_id: str):
 @app.post("/game", response_model=CreateGameResponse)
 async def create_game(request: CreateGameRequest):
     """Create a new game with the given cards and ID."""
-    game = Game()
+    print (request.cards)
+    game = Game(request.cards)
     # Check if game already exists
     if os.path.exists(os.path.join(GAMES_DIR, f"{game.id_game}.json")):
         raise HTTPException(status_code=400, detail="Game ID already exists")

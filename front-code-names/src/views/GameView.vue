@@ -24,6 +24,8 @@
       @card-clicked="handleCardGuess"
     />
 
+    <button class="pass-button" @click="handleCardGuess('PASSE')">Pass</button>
+
     <div v-if="gameData.winner" class="winner-announcement">
       <h2>Game Over! {{ gameData.winner.toUpperCase() }} team wins!</h2>
       <button @click="goToCreatePage">Play Again</button>
@@ -183,5 +185,12 @@ watch(
 }
 .winner-announcement button:hover {
   background-color: #4cae4c;
+}
+
+.pass-button {
+  background-color: #e1b475;
+  color: white;
+  margin-top: 10px;
+  padding: 1% 3%;
 }
 </style>
