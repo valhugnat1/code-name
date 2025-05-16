@@ -88,4 +88,10 @@ const playerColorClass = computed(() => {
   font-weight: bold;
   text-transform: capitalize;
 }
+
+@media screen and (max-width: 1024px) {
+  .clue-display-module {
+    min-width: 0px;
+  }
+}
 </style>

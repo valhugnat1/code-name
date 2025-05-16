@@ -67,4 +67,9 @@ const userMessageToDisplay = computed(() => {
 .user-message-box strong {
   color: #555;
 }
+@media screen and (max-width: 1024px) {
+  .score-board-module {
+    min-width: 0px;
+  }
+}
 </style>

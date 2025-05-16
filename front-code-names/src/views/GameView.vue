@@ -4,6 +4,10 @@
   <div v-if="!isLoading && gameData" class="game-container">
     <!-- Desktop layout -->
     <div class="desktop-layout">
+      <div v-if="gameData.winner" class="winner-announcement">
+        <h2>Game Over! {{ gameData.winner.toUpperCase() }} team wins!</h2>
+        <button @click="goToCreatePage">Play Again</button>
+      </div>
       <div class="top-panels">
         <ClueDisplay
           :currentClue="gameData.current_clue"
@@ -67,11 +71,6 @@
           Pass
         </button>
       </div>
-    </div>
-
-    <div v-if="gameData.winner" class="winner-announcement">
-      <h2>Game Over! {{ gameData.winner.toUpperCase() }} team wins!</h2>
-      <button @click="goToCreatePage">Play Again</button>
     </div>
   </div>
 </template>
@@ -249,6 +248,7 @@ watch(
 
 .winner-announcement {
   margin-top: 20px;
+  margin-bottom: 20px;
   padding: 20px;
   background-color: #dff0d8;
   color: #3c763d;
@@ -317,8 +317,8 @@ watch(
   }
 
   .game-board {
-    width: 70%;
-    height: 65%;
+    width: 90%;
+    height: 50%;
   }
 }
 
